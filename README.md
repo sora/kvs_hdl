@@ -1,69 +1,28 @@
-## CPU-less KVS
+### KVS_HDL
 
-**Spec**
+A minimal implementation for CPU-less Key-Value Store on FPGA. See [Spec and Design](https://github.com/sora/kvs_hdl/wiki/Spec-and-Design).
 
-- KVS protocol
-    * Memcache Binary Protocol
-- Transport protocol
-    * UDP
-    * port: 11211
-- Key length
-    * variable length
-- Value size
-    * 32 byte
-- Storage type
-    * Dual-Port BRAM
-    * 131,072 byte
-- Commands
-    * Set and Get
+**Simulation on OSX**
 
+```
+$ brew install icarus-verilog gtkwave
+$ cd cores/kvs/test
+$ make
+$ make wave
+```
 ------------------------
 
-**Source files**
+**Supported FPGA board**
 
-Verilog2001で記述
+* [Lattice ECP3 Versa Development Kit](http://www.latticesemi.com/products/developmenthardware/developmentkits/ecp3versadevelopmentkit/index.cfm)
+* ~~NetFPGA-1G~~
 
-- top.v
-    * topモジュール．memcachebinaryprotocolを解釈
-- lookup.v
-    * set/getを発行
-- memory.v
-    * データの保存場所
-- crc.v
-    * 今回はhashkeyの生成にCRC32を利用
+**Sources**
 
-------------------------
-
-** Block diagram**
-
-![ブロックダイアグラム](https://raw.github.com/sora/ethernet-2013/master/fig/kvs_block_diagram.png?login=sora&token=99c98daccccdc0989f68b9de3aa6d5f6)
-
-------------------------
-
-**DC_RAM_TRUE**
-
-![]()
-
-------------------------
-
-**メモリアドレス設計**
-
-![]()
-
-------------------------
-
-**Valueの構造**
-
-![]()
-
-------------------------
-
-**Reply送信タイミング**
-
-![内部遅延](https://raw.github.com/sora/ethernet-2013/master/fig/kvs_logic_delay.png?login=sora&token=aaef10cb63989633ca84420436081f7e)
-
-今回の設計では，できるだけ内部ロジックの遅延を低くするために，Requestパケットを受信し終える前にReplayパケットを送信し始めています．
-具体的には，RequestパケットのMemcachedヘッダのMagic Fieldを受信した次のクロックから，応答メッセージ送信を開始しています．
-これだけ遅延を切り詰めた設計でも，100GE ワイヤーレートを実現することは難しいです．ここらへんの遅延の考え方は，10G事始めで少しだけ触れたいと思います．
-
-
+```
+/boards/ecp3versa/synthesis           -- project files
+/boards/ecp3versa/rtl/kvs_hdl_top.v   -- top module
+/cores/crc32/rtl/crc32.v              -- generate ethernet FCS
+/cores/crc16/rtl/crc16.v              -- generate hashkey
+/cores/kvs/rtl/kvs.v                  -- Key-Value Store module
+```
