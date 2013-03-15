@@ -67,8 +67,8 @@
 1_00
 1_80  // memcache: Magic (request: 0x80)
 1_01  // memcache: Opcode (set: 0x01)
-1_08  // memcache: Key length (8)
-1_00
+1_00  // memcache: Key length (8)
+1_08
 1_08  // memcache: extra length (8)
 1_00  // memcache: data type
 1_00  // memcache: reserved
@@ -211,8 +211,8 @@
 1_00
 1_80  // memcache: Magic (request:0x80)
 1_00  // memcache: Opcode (get:0x00)
-1_08  // memcache: Key length
-1_00
+1_00  // memcache: Key length
+1_08
 1_00  // memcache: extra length
 1_00  // memcache: data type
 1_00  // memcache: reserved

@@ -1,4 +1,4 @@
-SIM_SRC=tb_kvs.v ../../crc32/rtl/crc32.v ../rtl/kvs.v
+SIM_SRC=tb_kvs.v ../../crc32/rtl/crc32.v ../../crc16/rtl/crc16.v ../rtl/kvs.v
 
 test: request.hex isim
 
