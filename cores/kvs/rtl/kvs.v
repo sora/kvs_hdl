@@ -188,10 +188,22 @@ always @(posedge gtx_clk) begin
     txcounter <= txcounter + 12'd1;
 end
 
+// Ethernet FCS generator
 reg crc_rd;
 wire        crc_init = (txcounter == 12'h08);
 wire [31:0] crc_out;
 wire        crc_data_en = ~crc_rd;
+crc_gen crc_inst (
+    .Reset(sys_rst)
+  , .Clk(gtx_clk)
+  , .Init(crc_init)
+  , .Frame_data(txd)
+  , .Data_en(crc_data_en)
+  , .CRC_rd(crc_rd)
+  , .CRC_end()
+  , .CRC_out(crc_out)
+);
+
 always @(posedge gtx_clk) begin
   if (sys_rst) begin
     tx_en  <= 1'b0;
@@ -286,21 +298,6 @@ always @(posedge gtx_clk) begin
     endcase
   end
 end
-
-
-//------------------------------------------------------------------
-// Ethernet FCS generator
-//------------------------------------------------------------------
-crc_gen crc_inst (
-    .Reset(sys_rst)
-  , .Clk(gtx_clk)
-  , .Init(crc_init)
-  , .Frame_data(txd)
-  , .Data_en(crc_data_en)
-  , .CRC_rd(crc_rd)
-  , .CRC_end()
-  , .CRC_out(crc_out)
-);
 
 endmodule
 
