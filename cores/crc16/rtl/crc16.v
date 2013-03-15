@@ -63,7 +63,8 @@ always @ (negedge Clk)
   else
     CRC_reg <= Init ? 16'hffff : Data_en ? NextCRC16(Frame_data, CRC_reg) : CRC_reg;
 
-assign CRC_out = ~{ CRC_reg[ 8],CRC_reg[ 9],CRC_reg[10],CRC_reg[11],CRC_reg[12],CRC_reg[13],CRC_reg[14],CRC_reg[15], CRC_reg[ 0],CRC_reg[ 1],CRC_reg[ 2],CRC_reg[ 3],CRC_reg[ 4],CRC_reg[ 5],CRC_reg[ 6],CRC_reg[ 7] };
+assign CRC_out = ~{ CRC_reg[ 8],CRC_reg[ 9],CRC_reg[10],CRC_reg[11],CRC_reg[12],CRC_reg[13],CRC_reg[14],CRC_reg[15],
+                    CRC_reg[ 0],CRC_reg[ 1],CRC_reg[ 2],CRC_reg[ 3],CRC_reg[ 4],CRC_reg[ 5],CRC_reg[ 6],CRC_reg[ 7] };
 
 endmodule
 

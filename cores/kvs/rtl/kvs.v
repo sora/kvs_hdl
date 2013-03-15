@@ -9,7 +9,7 @@
 `define  CMD_SET        8'h01
 
 module kvs #(
-    parameter port = 16'd11211      // listen port number
+    parameter listen_port = 16'd11211      // listen port number
 )(
   // system
     input wire sys_rst
@@ -38,7 +38,7 @@ module kvs #(
 
 
 //------------------------------------------------------------------
-// RX counter (Clock: rx_clk)
+// checking packet format
 //------------------------------------------------------------------
 reg [10:0] rxcounter;
 always @(posedge rx_clk) begin
@@ -51,11 +51,6 @@ always @(posedge rx_clk) begin
       rxcounter <= 11'd0;
 end
 
-
-//------------------------------------------------------------------
-// Receiver logic
-//------------------------------------------------------------------
-reg        memcache_dv;
 reg [15:0] eth_type;
 reg [15:0] ip_version;
 reg [ 7:0] ipv4_proto;
@@ -63,6 +58,7 @@ reg [31:0] ipv4_src_ip;
 reg [31:0] ipv4_dst_ip;
 reg [15:0] tp_src_port;
 reg [15:0] tp_dst_port;
+reg        packet_dv;
 always @(posedge rx_clk) begin
   if (sys_rst) begin
     eth_type    <= 16'h0;
@@ -72,7 +68,7 @@ always @(posedge rx_clk) begin
     ipv4_dst_ip <= 32'h0;
     tp_src_port <= 16'h0;
     tp_dst_port <= 16'h0;
-    memcache_dv <=  1'b0;
+    packet_dv   <=  1'b0;
   end else begin
     if (rx_dv) begin
       case (rxcounter)
@@ -94,58 +90,95 @@ always @(posedge rx_clk) begin
         11'h2d: tp_dst_port[15:8]   <= rxd;
         11'h2e: tp_dst_port[ 7:0]   <= rxd;
         11'h32: begin
-          if (eth_type[15:0]    == 16'h0800  && ip_version[15:0] == 16'h4500 &&
-              tp_dst_port[15:0] == 16'd11211 && ipv4_proto[7:0]  == 8'h11) begin
-            memcache_dv <= 1'b1;
+          // checking ethernet frame format
+          if (eth_type[15:0]    == 16'h0800    && ip_version[15:0] == 16'h4500 &&
+              tp_dst_port[15:0] == listen_port && ipv4_proto[7:0]  == 8'h11) begin
+            packet_dv <= 1'b1;
           end
         end
       endcase
     end else begin
-      eth_type       <= 16'h0;
-      ip_version     <= 16'h0;
-      ipv4_proto     <=  8'h0;
-      ipv4_src_ip    <= 32'h0;
-      ipv4_dst_ip    <= 32'h0;
-      tp_src_port    <= 16'h0;
-      tp_dst_port    <= 16'h0;
-      memcache_dv    <=  1'b0;
+      eth_type    <= 16'h0;
+      ip_version  <= 16'h0;
+      ipv4_proto  <=  8'h0;
+      ipv4_src_ip <= 32'h0;
+      ipv4_dst_ip <= 32'h0;
+      tp_src_port <= 16'h0;
+      tp_dst_port <= 16'h0;
+      packet_dv   <=  1'b0;
     end
   end
 end
 assign led = rx_dv == 1'b1 ? 8'h0 : 8'hff; // light when received a packet
+
+
+//------------------------------------------------------------------
+// memcache packet receiver
+//------------------------------------------------------------------
 
 reg [10:0] memcache_counter;
 always @(posedge rx_clk) begin
   if (sys_rst)
     memcache_counter <= 11'd0;
   else
-    if (rx_dv && memcache_dv)
+    if (rx_dv && packet_dv)
       memcache_counter <= memcache_counter + 11'd1;
     else
       memcache_counter <= 11'd0;
 end
 
-reg [7:0] memcache_magic;
-reg [7:0] memcache_opcode;
+// hashkey generator
+reg hashkey_rd;
+wire        hashkey_init = (memcache_counter == 12'h18);
+wire [15:0] hashkey_out;
+wire        hashkey_data_en = ~hashkey_rd;
+wire [11:0] hashkey         = hashkey_out[11:0] ^ hashkey_out[15:12];
+crc16_gen hashkey_gen (
+    .Reset(sys_rst)
+  , .Clk(gtx_clk)
+  , .Init(hashkey_init)
+  , .Frame_data(rxd)
+  , .Data_en(hashkey_data_en)
+  , .CRC_rd(hashkey_rd)
+  , .CRC_end()
+  , .CRC_out(hashkey_out)
+);
+
+// packet receiver
+reg [ 7:0] memcache_magic;
+reg [ 7:0] memcache_opcode;
+reg [15:0] memcache_key_length;
+reg [31:0] memcache_total_body;
 always @(posedge rx_clk) begin
   if (sys_rst) begin
-    memcache_magic  <= 8'h0;
-    memcache_opcode <= 8'h0;
+    memcache_magic      <=  8'h0;
+    memcache_opcode     <=  8'h0;
+    memcache_key_length <= 16'h0;
+    memcache_total_body <= 32'h0;
   end else begin
-    if (memcache_dv) begin
+    if (packet_dv) begin
       case (memcache_counter)
-        11'h00: memcache_magic[7:0]  <= rxd;
-        11'h01: memcache_opcode[7:0] <= rxd;
+        11'h00: memcache_magic[7:0]        <= rxd;
+        11'h01: memcache_opcode[7:0]       <= rxd;
+        11'h02: memcache_key_length[15: 8] <= rxd;
+        11'h03: memcache_key_length[ 7: 0] <= rxd;
+        11'h08: memcache_total_body[31:24] <= rxd;
+        11'h09: memcache_total_body[23:16] <= rxd;
+        11'h0a: memcache_total_body[15: 8] <= rxd;
+        11'h0b: memcache_total_body[ 7: 0] <= rxd;
       endcase
     end else begin
-      memcache_magic  <= 8'h0;
-      memcache_opcode <= 8'h0;
+      memcache_magic      <=  8'h0;
+      memcache_opcode     <=  8'h0;
+      memcache_key_length <= 16'h0;
+      memcache_total_body <= 32'h0;
     end
   end
 end
 
+
 //------------------------------------------------------------------
-// TX counter (Clock: gtx_clk)
+// Sender logic
 //------------------------------------------------------------------
 reg [11:0] txcounter;
 always @(posedge gtx_clk) begin
@@ -155,10 +188,6 @@ always @(posedge gtx_clk) begin
     txcounter <= txcounter + 12'd1;
 end
 
-
-//------------------------------------------------------------------
-// Sender logic
-//------------------------------------------------------------------
 reg crc_rd;
 wire        crc_init = (txcounter == 12'h08);
 wire [31:0] crc_out;
