@@ -81,12 +81,12 @@ always @(posedge rx_clk) begin
         11'h17: ip_version[15:8]    <= rxd;
         11'h18: ip_version[ 7:0]    <= rxd;
         11'h20: ipv4_proto[ 7:0]    <= rxd;
-        11'h23: ipv4_src_ip[31:25]  <= rxd;
-        11'h24: ipv4_src_ip[24:16]  <= rxd;
+        11'h23: ipv4_src_ip[31:24]  <= rxd;
+        11'h24: ipv4_src_ip[23:16]  <= rxd;
         11'h25: ipv4_src_ip[15: 8]  <= rxd;
         11'h26: ipv4_src_ip[ 7: 0]  <= rxd;
-        11'h27: ipv4_dst_ip[31:25]  <= rxd;
-        11'h28: ipv4_dst_ip[24:16]  <= rxd;
+        11'h27: ipv4_dst_ip[31:24]  <= rxd;
+        11'h28: ipv4_dst_ip[23:16]  <= rxd;
         11'h29: ipv4_dst_ip[15: 8]  <= rxd;
         11'h2a: ipv4_dst_ip[ 7: 0]  <= rxd;
         11'h2b: tp_src_port[15:8]   <= rxd;

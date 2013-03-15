@@ -49,14 +49,14 @@
 1_11  // IP: Protocol (UDP=0x11)
 1_44  // IP: Header CheckSum
 1_9d
-1_0a  // IP: Source IP (10.0.21.105)
-1_00
-1_15
-1_69
-1_0a  // IP: Dest IP (10.0.20.10)
-1_00
-1_14
-1_0a
+1_ee  // IP: Source IP (10.0.21.105)
+1_ee
+1_ee
+1_ee
+1_cc  // IP: Dest IP (10.0.20.10)
+1_cc
+1_cc
+1_cc
 1_27  // UDP: src port (9999)
 1_0f
 1_2b  // UDP: dst port (11211)
